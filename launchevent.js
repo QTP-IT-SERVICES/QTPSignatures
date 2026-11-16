@@ -11,11 +11,11 @@
 //    For the test, just put in your own details.
 // ---------------------------------------------------------------------------
 var STAFF = {
-  "your.name@qtponline.com": {
-    firstName: "First",
-    lastName: "Last",
-    title: "Job Title",
-    ext: "123",
+  "eric.leonard@qtponline.com": {
+    firstName: "Eric",
+    lastName: "Leonard",
+    title: "I.T Admin",
+    ext: "1717",
     phone: "+353 44 000 0000",
     mobile: "+353 87 000 0000"
   }

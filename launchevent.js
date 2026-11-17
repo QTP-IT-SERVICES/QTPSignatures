@@ -193,11 +193,27 @@ function onNewMessageComposeHandler(event) {
   }
 }
 
-try {
-  Office.actions.associate("onNewMessageComposeHandler", onNewMessageComposeHandler);
-  log("handler registered");
-} catch (e) {
-  console.error("QTP Signature: could not register handler", e);
+// ---------------------------------------------------------------------------
+// 4. REGISTER THE HANDLER WITH OUTLOOK
+// ---------------------------------------------------------------------------
+function registerHandler(source) {
+  try {
+    Office.actions.associate("onNewMessageComposeHandler", onNewMessageComposeHandler);
+    log("handler registered (" + source + ")");
+  } catch (e) {
+    console.error("QTP Signature: could not register handler", e);
+  }
+}
+
+// Register straight away (needed for classic Outlook)
+registerHandler("immediate");
+
+// Register again once Office has finished starting up (helps Outlook on the web)
+if (typeof Office !== "undefined" && Office.onReady) {
+  Office.onReady(function (info) {
+    log("Office ready", info);
+    registerHandler("onReady");
+  });
 }
 
 log("script loaded");

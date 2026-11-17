@@ -30,7 +30,7 @@ var STAFF = {
   "danny.doubell@qtponline.com": {
     firstName: "Danny",
     lastName: "Doubell",
-    title: "Head of Digital",
+    title: "Head of Digital & Tech",
     ext: "1717",
     phone: "+353 44 934 1638",
     mobile: ""

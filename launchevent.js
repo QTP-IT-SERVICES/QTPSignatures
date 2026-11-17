@@ -5,27 +5,42 @@
  * Exchange transport rule can skip messages that already have a signature.
  */
 
-console.log("QTP Signature: script started");
-
 // ---------------------------------------------------------------------------
 // 1. STAFF DETAILS
-//    Email address must be lower case. Leave a field as "" to hide that line.
+//    Email address must be ALL LOWER CASE.
+//    Leave a field as "" to hide that line in the signature.
 // ---------------------------------------------------------------------------
 var STAFF = {
   "eric.leonard@qtponline.com": {
     firstName: "Eric",
     lastName: "Leonard",
-    title: "I.T Admin",
+    title: "I.T Administrator",
     ext: "1717",
-    phone: "+353 44 000 0000",
-    mobile: "+353 87 000 0000"
+    phone: "+353 44 934 1638",
+    mobile: ""
+  },
+  "jacques.duplessis@qtponline.com": {
+    firstName: "Jacques",
+    lastName: "Du Plessis",
+    title: "I.T Engineer",
+    ext: "1714",
+    phone: "+353 44 934 1638",
+    mobile: ""
+  },
+  "danny.doubell@qtponline.com": {
+    firstName: "Danny",
+    lastName: "Doubell",
+    title: "Head of Digital",
+    ext: "1717",
+    phone: "+353 44 934 1638",
+    mobile: ""
   }
 };
 
 // ---------------------------------------------------------------------------
-// 2. SIGNATURE TEMPLATE (matches the current transport rule design)
+// 2. SIGNATURE TEMPLATE
 // ---------------------------------------------------------------------------
-var LOGO_URL = "https://qtp.aws.aphix.software/sites/admin/plugins/elfinder/files/qtp/logos/IT/QTP%20Logo%20Circle.png";
+var LOGO_URL = "https://148774392.fs1.hubspotusercontent-eu1.net/hubfs/148774392/NEW%20QTP%20Logo%20Circle%2022.09.2026.png";
 var SIGNATURE_HEADER = "X-QTP-Signature";
 
 function esc(value) {
@@ -82,10 +97,10 @@ function buildSignature(p, email) {
 
 // ---------------------------------------------------------------------------
 // 3. EVENT HANDLER - runs on new message, reply, reply all and forward
-//    DEBUG VERSION: logs every step to the browser console and shows a
-//    message bar in the compose window with the result.
+//    Set DEBUG to true to show a status bar in the compose window and log
+//    each step to the browser console when troubleshooting.
 // ---------------------------------------------------------------------------
-var DEBUG = true;
+var DEBUG = false;
 
 function log(text, extra) {
   if (!DEBUG) return;
@@ -104,14 +119,8 @@ function note(item, text) {
       message: ("QTP Signature: " + text).substring(0, 150),
       icon: "Icon.16x16",
       persistent: false
-    }, function (r) {
-      if (r.status === Office.AsyncResultStatus.Failed) {
-        log("message bar failed - " + r.error.message);
-      }
     });
-  } catch (e) {
-    console.error("QTP Signature: message bar error", e);
-  }
+  } catch (e) {}
 }
 
 function onNewMessageComposeHandler(event) {
@@ -119,75 +128,55 @@ function onNewMessageComposeHandler(event) {
   var item;
   try {
     var mailbox = Office.context.mailbox;
-    log("mailbox found", !!mailbox);
-
     item = mailbox.item;
-    log("item found", !!item);
 
     var email = (mailbox.userProfile.emailAddress || "").toLowerCase();
     log("email address is " + email);
 
     var person = STAFF[email];
     if (!person) {
-      log("no staff entry for " + email);
-      note(item, "ran, but no staff entry for " + email);
+      // Not in the list: do nothing, the transport rule will add the signature.
+      note(item, "no staff entry for " + email);
       event.completed();
       return;
     }
-    log("staff entry found");
 
     var html = buildSignature(person, email);
-    log("signature built, length " + html.length);
 
     var insertSignature = function () {
-      log("inserting signature");
       item.body.setSignatureAsync(html, { coercionType: Office.CoercionType.Html }, function (r) {
         if (r.status === Office.AsyncResultStatus.Failed) {
-          console.error("QTP Signature: setSignature failed", r.error);
+          log("signature failed - " + r.error.message);
           note(item, "signature failed - " + r.error.message);
         } else {
-          log("signature added");
           note(item, "signature added for " + email);
         }
         event.completed();
-        log("event completed");
       });
     };
 
-    var setHeader = function (r) {
-      if (r && r.status === Office.AsyncResultStatus.Failed) {
-        log("disable client signature failed - " + r.error.message);
-      } else {
-        log("client signature disabled (or skipped)");
-      }
-
+    var setHeader = function () {
       if (item.internetHeaders && item.internetHeaders.setAsync) {
         var headers = {};
         headers[SIGNATURE_HEADER] = "Applied";
-        log("setting header");
-        item.internetHeaders.setAsync(headers, function (hr) {
-          if (hr.status === Office.AsyncResultStatus.Failed) {
-            log("header failed - " + hr.error.message);
-          } else {
-            log("header set");
-          }
+        item.internetHeaders.setAsync(headers, function () {
           insertSignature();
         });
       } else {
-        log("internetHeaders not supported, skipping header");
         insertSignature();
       }
     };
 
+    // Turn off the user's own Outlook signature so they don't get two.
     if (item.disableClientSignatureAsync) {
-      log("disabling client signature");
-      item.disableClientSignatureAsync(setHeader);
+      item.disableClientSignatureAsync(function () {
+        setHeader();
+      });
     } else {
-      log("disableClientSignatureAsync not supported, skipping");
       setHeader();
     }
   } catch (e) {
-    console.error("QTP Signature: error", e);
+    log("error - " + e.message);
     if (item) note(item, "error - " + e.message);
     event.completed();
   }
@@ -201,19 +190,16 @@ function registerHandler(source) {
     Office.actions.associate("onNewMessageComposeHandler", onNewMessageComposeHandler);
     log("handler registered (" + source + ")");
   } catch (e) {
-    console.error("QTP Signature: could not register handler", e);
+    log("could not register handler - " + e.message);
   }
 }
 
 // Register straight away (needed for classic Outlook)
 registerHandler("immediate");
 
-// Register again once Office has finished starting up (helps Outlook on the web)
+// Register again once Office has finished starting up (needed for Outlook on the web)
 if (typeof Office !== "undefined" && Office.onReady) {
-  Office.onReady(function (info) {
-    log("Office ready", info);
+  Office.onReady(function () {
     registerHandler("onReady");
   });
 }
-
-log("script loaded");

@@ -5,7 +5,7 @@
            xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
            xsi:type="MailApp">
   <Id>7c3e9a52-4b1f-4d8e-9a6c-2f5b8e1d3a47</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.1.0</Version>
   <ProviderName>Quality Tractor Parts</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="QTP Email Signature"/>
@@ -60,6 +60,15 @@
               <SourceLocation resid="WebViewRuntime.Url"/>
             </ExtensionPoint>
           </DesktopFormFactor>
+          <MobileFormFactor>
+            <FunctionFile resid="Commands.Url"/>
+            <ExtensionPoint xsi:type="LaunchEvent">
+              <LaunchEvents>
+                <LaunchEvent Type="OnNewMessageCompose" FunctionName="onNewMessageComposeHandler"/>
+              </LaunchEvents>
+              <SourceLocation resid="WebViewRuntime.Url"/>
+            </ExtensionPoint>
+          </MobileFormFactor>
         </Host>
       </Hosts>
       <Resources>
@@ -71,9 +80,3 @@
         <bt:Urls>
           <bt:Url id="Commands.Url" DefaultValue="https://qtp-it-services.github.io/QTPSignatures/commands.html"/>
           <bt:Url id="WebViewRuntime.Url" DefaultValue="https://qtp-it-services.github.io/QTPSignatures/commands.html"/>
-          <bt:Url id="JSRuntime.Url" DefaultValue="https://qtp-it-services.github.io/QTPSignatures/launchevent.js"/>
-        </bt:Urls>
-      </Resources>
-    </VersionOverrides>
-  </VersionOverrides>
-</OfficeApp>

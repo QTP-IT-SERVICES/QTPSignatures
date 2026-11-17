@@ -10,32 +10,6 @@
 //    Email address must be ALL LOWER CASE.
 //    Leave a field as "" to hide that line in the signature.
 // ---------------------------------------------------------------------------
-var STAFF = {
-  "eric.leonard@qtponline.com": {
-    firstName: "Eric",
-    lastName: "Leonard",
-    title: "I.T Administrator",
-    ext: "1717",
-    phone: "+353 44 934 1638",
-    mobile: ""
-  },
-  "jacques.duplessis@qtponline.com": {
-    firstName: "Jacques",
-    lastName: "Du Plessis",
-    title: "I.T Engineer",
-    ext: "1714",
-    phone: "+353 44 934 1638",
-    mobile: ""
-  },
-  "danny.doubell@qtponline.com": {
-    firstName: "Danny",
-    lastName: "Doubell",
-    title: "Head of Digital & Tech",
-    ext: "1717",
-    phone: "+353 44 934 1638",
-    mobile: ""
-  }
-};
 
 // ---------------------------------------------------------------------------
 // 2. SIGNATURE TEMPLATE

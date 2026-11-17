@@ -5,6 +5,8 @@
  * Exchange transport rule can skip messages that already have a signature.
  */
 
+console.log("QTP Signature: script started");
+
 // ---------------------------------------------------------------------------
 // 1. STAFF DETAILS
 //    Email address must be lower case. Leave a field as "" to hide that line.
@@ -80,9 +82,19 @@ function buildSignature(p, email) {
 
 // ---------------------------------------------------------------------------
 // 3. EVENT HANDLER - runs on new message, reply, reply all and forward
-//    DEBUG VERSION: shows a message bar in the compose window with the result.
+//    DEBUG VERSION: logs every step to the browser console and shows a
+//    message bar in the compose window with the result.
 // ---------------------------------------------------------------------------
 var DEBUG = true;
+
+function log(text, extra) {
+  if (!DEBUG) return;
+  if (extra !== undefined) {
+    console.log("QTP Signature: " + text, extra);
+  } else {
+    console.log("QTP Signature: " + text);
+  }
+}
 
 function note(item, text) {
   if (!DEBUG) return;
@@ -92,56 +104,100 @@ function note(item, text) {
       message: ("QTP Signature: " + text).substring(0, 150),
       icon: "Icon.16x16",
       persistent: false
+    }, function (r) {
+      if (r.status === Office.AsyncResultStatus.Failed) {
+        log("message bar failed - " + r.error.message);
+      }
     });
-  } catch (e) {}
+  } catch (e) {
+    console.error("QTP Signature: message bar error", e);
+  }
 }
 
 function onNewMessageComposeHandler(event) {
+  log("handler called");
   var item;
   try {
     var mailbox = Office.context.mailbox;
-    item = mailbox.item;
-    var email = (mailbox.userProfile.emailAddress || "").toLowerCase();
-    var person = STAFF[email];
+    log("mailbox found", !!mailbox);
 
+    item = mailbox.item;
+    log("item found", !!item);
+
+    var email = (mailbox.userProfile.emailAddress || "").toLowerCase();
+    log("email address is " + email);
+
+    var person = STAFF[email];
     if (!person) {
+      log("no staff entry for " + email);
       note(item, "ran, but no staff entry for " + email);
       event.completed();
       return;
     }
+    log("staff entry found");
 
     var html = buildSignature(person, email);
+    log("signature built, length " + html.length);
 
     var insertSignature = function () {
+      log("inserting signature");
       item.body.setSignatureAsync(html, { coercionType: Office.CoercionType.Html }, function (r) {
         if (r.status === Office.AsyncResultStatus.Failed) {
+          console.error("QTP Signature: setSignature failed", r.error);
           note(item, "signature failed - " + r.error.message);
         } else {
+          log("signature added");
           note(item, "signature added for " + email);
         }
         event.completed();
+        log("event completed");
       });
     };
 
-    var setHeader = function () {
+    var setHeader = function (r) {
+      if (r && r.status === Office.AsyncResultStatus.Failed) {
+        log("disable client signature failed - " + r.error.message);
+      } else {
+        log("client signature disabled (or skipped)");
+      }
+
       if (item.internetHeaders && item.internetHeaders.setAsync) {
         var headers = {};
         headers[SIGNATURE_HEADER] = "Applied";
-        item.internetHeaders.setAsync(headers, insertSignature);
+        log("setting header");
+        item.internetHeaders.setAsync(headers, function (hr) {
+          if (hr.status === Office.AsyncResultStatus.Failed) {
+            log("header failed - " + hr.error.message);
+          } else {
+            log("header set");
+          }
+          insertSignature();
+        });
       } else {
+        log("internetHeaders not supported, skipping header");
         insertSignature();
       }
     };
 
     if (item.disableClientSignatureAsync) {
+      log("disabling client signature");
       item.disableClientSignatureAsync(setHeader);
     } else {
+      log("disableClientSignatureAsync not supported, skipping");
       setHeader();
     }
   } catch (e) {
+    console.error("QTP Signature: error", e);
     if (item) note(item, "error - " + e.message);
     event.completed();
   }
 }
 
-Office.actions.associate("onNewMessageComposeHandler", onNewMessageComposeHandler);
+try {
+  Office.actions.associate("onNewMessageComposeHandler", onNewMessageComposeHandler);
+  log("handler registered");
+} catch (e) {
+  console.error("QTP Signature: could not register handler", e);
+}
+
+log("script loaded");

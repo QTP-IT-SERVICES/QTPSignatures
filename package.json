@@ -1,0 +1,10 @@
+{
+  "name": "qtp-email-signature",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QTP Email Signature Outlook add-in (built by GitHub Actions)",
+  "dependencies": {
+    "@azure/msal-browser": "5.27.0",
+    "esbuild": "0.24.0"
+  }
+}

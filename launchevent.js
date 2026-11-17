@@ -8,7 +8,6 @@
 // ---------------------------------------------------------------------------
 // 1. STAFF DETAILS
 //    Email address must be lower case. Leave a field as "" to hide that line.
-//    For the test, just put in your own details.
 // ---------------------------------------------------------------------------
 var STAFF = {
   "eric.leonard@qtponline.com": {
@@ -81,16 +80,32 @@ function buildSignature(p, email) {
 
 // ---------------------------------------------------------------------------
 // 3. EVENT HANDLER - runs on new message, reply, reply all and forward
+//    DEBUG VERSION: shows a message bar in the compose window with the result.
 // ---------------------------------------------------------------------------
+var DEBUG = true;
+
+function note(item, text) {
+  if (!DEBUG) return;
+  try {
+    item.notificationMessages.replaceAsync("qtpDebug", {
+      type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
+      message: ("QTP Signature: " + text).substring(0, 150),
+      icon: "Icon.16x16",
+      persistent: false
+    });
+  } catch (e) {}
+}
+
 function onNewMessageComposeHandler(event) {
+  var item;
   try {
     var mailbox = Office.context.mailbox;
-    var item = mailbox.item;
+    item = mailbox.item;
     var email = (mailbox.userProfile.emailAddress || "").toLowerCase();
     var person = STAFF[email];
 
-    // Not in the list: do nothing, the transport rule will add the signature.
     if (!person) {
+      note(item, "ran, but no staff entry for " + email);
       event.completed();
       return;
     }
@@ -98,7 +113,12 @@ function onNewMessageComposeHandler(event) {
     var html = buildSignature(person, email);
 
     var insertSignature = function () {
-      item.body.setSignatureAsync(html, { coercionType: Office.CoercionType.Html }, function () {
+      item.body.setSignatureAsync(html, { coercionType: Office.CoercionType.Html }, function (r) {
+        if (r.status === Office.AsyncResultStatus.Failed) {
+          note(item, "signature failed - " + r.error.message);
+        } else {
+          note(item, "signature added for " + email);
+        }
         event.completed();
       });
     };
@@ -113,13 +133,13 @@ function onNewMessageComposeHandler(event) {
       }
     };
 
-    // Turn off the user's own Outlook signature so they don't get two.
     if (item.disableClientSignatureAsync) {
       item.disableClientSignatureAsync(setHeader);
     } else {
       setHeader();
     }
   } catch (e) {
+    if (item) note(item, "error - " + e.message);
     event.completed();
   }
 }
